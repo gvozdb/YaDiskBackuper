@@ -1,0 +1,27 @@
+# Root MYSQL
+mysql:
+    user: "root"
+    pass: "root"
+
+# Аккаунт на ЯДиске
+ydisk:
+    user: "login"
+    pass: "password"
+
+# Папка, где временно распологать файлы бекапов
+path_backup: "/var/dumps/"
+
+# Папка на ЯДиске, куда лить бекапы (создаст автоматом, если не создана)
+path_webdav: "/dumps/MODX-server-1/"
+
+# Что бекапить?
+backup:
+    sys: True # Бекапить системные настройки
+    db: True # Бекапить базу
+    files: True # Бекапить файлы
+
+# Удалять старые логи
+remove_old_logs: True
+
+# Сколько дней хранить бэкапы на ЯДиске (0 - вообще не удалять)
+store_old: 7
