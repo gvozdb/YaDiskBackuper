@@ -5,7 +5,7 @@
 YaDiskBackuper
 
 Author: Pavel Gvozdb
-Version: 1.0.0-pl
+Version: 1.0.1-pl
 """
 
 import os
@@ -91,7 +91,7 @@ while try_ != False and try_i <= 5:
 
 ######### >> Сохраняем БД и заливаем на ЯДиск
 if backup_db:
-	dbs = str( subprocess.Popen( "mysql -u"+ mysql_u +" -p"+ mysql_p +" -e'show databases;' | grep -v information_schema | grep -v Database", stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()[0] )
+	dbs = str( subprocess.Popen( "mysql -u"+ mysql_u +" -p'"+ mysql_p +"' -e'show databases;' | grep -v information_schema | grep -v Database", stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()[0] )
 
 	for db in dbs.split('\n'):
 		if db and db != 'mysql' and db != 'performance_schema' and db != 'pma':
@@ -101,7 +101,7 @@ if backup_db:
 			try_i = 1
 
 			while try_ != False and try_i <= 5:
-				subprocess.Popen( "mysqldump --skip-lock-tables -u"+ mysql_u +" -p"+ mysql_p +" "+ db +" | bzip2 -c > "+ db_file, stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()
+				subprocess.Popen( "mysqldump --skip-lock-tables -u"+ mysql_u +" -p'"+ mysql_p +"' "+ db +" | bzip2 -c > "+ db_file, stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()
 
 				time.sleep(sleep_time)
 
