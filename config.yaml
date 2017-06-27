@@ -20,6 +20,9 @@ backup:
     db: True # Бекапить базу
     files: True # Бекапить файлы
 
+# Исключить юзеров (сайты) из бэкапа
+exclude: ['site1', 'site2']
+
 # Удалять старые логи
 remove_old_logs: True
 

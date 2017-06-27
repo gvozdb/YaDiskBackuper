@@ -5,7 +5,7 @@
 YaDiskBackuper
 
 Author: Pavel Gvozdb
-Version: 1.0.1-pl
+Version: 1.0.2-pl
 """
 
 import os
@@ -42,6 +42,7 @@ path_webdav_today = path_webdav + date_today_str +"/"
 backup_sys = config['backup']['sys']
 backup_db = config['backup']['db']
 backup_files = config['backup']['files']
+exclude = config['exclude']
 remove_old_logs = config['remove_old_logs']
 store_old = config['store_old']
 sleep_time = 2 # кол-во секунд, на которое время от времени засыпать...
@@ -95,32 +96,33 @@ if backup_db:
 
 	for db in dbs.split('\n'):
 		if db and db != 'mysql' and db != 'performance_schema' and db != 'pma':
-			db_file = date_today_str +"-www-"+ db +".sql.bz2"
+			if not db in exclude:
+				db_file = date_today_str +"-www-"+ db +".sql.bz2"
 
-			try_ = True
-			try_i = 1
+				try_ = True
+				try_i = 1
 
-			while try_ != False and try_i <= 5:
-				subprocess.Popen( "mysqldump --skip-lock-tables -u"+ mysql_u +" -p'"+ mysql_p +"' "+ db +" | bzip2 -c > "+ db_file, stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()
+				while try_ != False and try_i <= 5:
+					subprocess.Popen( "mysqldump --skip-lock-tables -u"+ mysql_u +" -p'"+ mysql_p +"' "+ db +" | bzip2 -c > "+ db_file, stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()
 
-				time.sleep(sleep_time)
+					time.sleep(sleep_time)
 
-				if try_i % 2 == 0:
-					disk.upload( os.path.abspath( db_file ), path_webdav_today + db_file ) # заливаем на ЯДиск
-				else:
-					subprocess.Popen( "curl --user "+ yd_u +":"+ yd_p +" -T "+ os.path.abspath(db_file) +" https://webdav.yandex.ru"+ path_webdav_today, stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()
+					if try_i % 2 == 0:
+						disk.upload( os.path.abspath( db_file ), path_webdav_today + db_file ) # заливаем на ЯДиск
+					else:
+						subprocess.Popen( "curl --user "+ yd_u +":"+ yd_p +" -T "+ os.path.abspath(db_file) +" https://webdav.yandex.ru"+ path_webdav_today, stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()
 
-				os.remove( os.path.abspath(db_file) ) # удаляем файл с сервера
+					os.remove( os.path.abspath(db_file) ) # удаляем файл с сервера
 
-				try:
-					for today_dump_file in disk.ls( path_webdav_today ):
-						if not today_dump_file.get('isDir') and today_dump_file.get('displayname') == db_file:
-							try_ = False
-				except YaDiskException as e:
-					if e.code == 404 or e.code == 500:
-						continue
+					try:
+						for today_dump_file in disk.ls( path_webdav_today ):
+							if not today_dump_file.get('isDir') and today_dump_file.get('displayname') == db_file:
+								try_ = False
+					except YaDiskException as e:
+						if e.code == 404 or e.code == 500:
+							continue
 
-				try_i += 1
+					try_i += 1
 ######### <<
 
 ######### >> Сохраняем системные директории и заливаем на ЯДиск
@@ -172,32 +174,33 @@ if backup_files:
 	sites_dir = "/var/www/"
 	for site in os.listdir( sites_dir ):
 		if not os.path.isfile( joinpath( sites_dir, site ) ) and site != 'pma' and site != 'html':
-			site_file = date_today_str +"-www-"+ site +".tar.bz2"
+			if not site in exclude:
+				site_file = date_today_str +"-www-"+ site +".tar.bz2"
 
-			try_ = True
-			try_i = 1
+				try_ = True
+				try_i = 1
 
-			while try_ != False and try_i <= 5:
-				subprocess.Popen( "tar -cjf "+ site_file +" "+ joinpath( sites_dir, site ) +" --exclude=core/cache/*", stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()
+				while try_ != False and try_i <= 5:
+					subprocess.Popen( "tar -cjf "+ site_file +" "+ joinpath( sites_dir, site ) +" --exclude=core/cache/*", stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()
 
-				time.sleep(sleep_time)
+					time.sleep(sleep_time)
 
-				if try_i % 2 == 0:
-					disk.upload( os.path.abspath( site_file ), path_webdav_today + site_file ) # заливаем на ЯДиск
-				else:
-					subprocess.Popen( "curl --user "+ yd_u +":"+ yd_p +" -T "+ os.path.abspath( site_file ) +" https://webdav.yandex.ru"+ path_webdav_today, stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()
+					if try_i % 2 == 0:
+						disk.upload( os.path.abspath( site_file ), path_webdav_today + site_file ) # заливаем на ЯДиск
+					else:
+						subprocess.Popen( "curl --user "+ yd_u +":"+ yd_p +" -T "+ os.path.abspath( site_file ) +" https://webdav.yandex.ru"+ path_webdav_today, stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()
 
-				os.remove( os.path.abspath( site_file ) ) # удаляем файл с сервера
+					os.remove( os.path.abspath( site_file ) ) # удаляем файл с сервера
 
-				try:
-					for today_dump_file in disk.ls( path_webdav_today ):
-						if not today_dump_file.get('isDir') and today_dump_file.get('displayname') == site_file:
-							try_ = False
-				except YaDiskException as e:
-					if e.code == 404 or e.code == 500:
-						continue
+					try:
+						for today_dump_file in disk.ls( path_webdav_today ):
+							if not today_dump_file.get('isDir') and today_dump_file.get('displayname') == site_file:
+								try_ = False
+					except YaDiskException as e:
+						if e.code == 404 or e.code == 500:
+							continue
 
-				try_i += 1
+					try_i += 1
 ######### <<
 
 ######### >> Чистим старые логи, удаляем папку созданную для сегодняшних бекапов
