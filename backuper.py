@@ -5,7 +5,7 @@
 YaDiskBackuper
 
 Author: Pavel Gvozdb
-Version: 1.0.2-pl
+Version: 1.0.3-pl
 """
 
 import os
@@ -18,7 +18,7 @@ import time
 from datetime import datetime, date, timedelta
 from os.path import join as joinpath
 
-from YaDiskClient import YaDisk, YaDiskException
+from YaDiskClient.YaDiskClient import YaDisk, YaDiskException
 
 
 ######### >> Параметры
@@ -103,11 +103,14 @@ if backup_db:
 				try_i = 1
 
 				while try_ != False and try_i <= 5:
+					if not try_:
+						break
+
 					subprocess.Popen( "mysqldump --skip-lock-tables -u"+ mysql_u +" -p'"+ mysql_p +"' "+ db +" | bzip2 -c > "+ db_file, stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()
 
 					time.sleep(sleep_time)
 
-					if try_i % 2 == 0:
+					if False and try_i % 2 == 0:
 						disk.upload( os.path.abspath( db_file ), path_webdav_today + db_file ) # заливаем на ЯДиск
 					else:
 						subprocess.Popen( "curl --user "+ yd_u +":"+ yd_p +" -T "+ os.path.abspath(db_file) +" https://webdav.yandex.ru"+ path_webdav_today, stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()
@@ -115,9 +118,11 @@ if backup_db:
 					os.remove( os.path.abspath(db_file) ) # удаляем файл с сервера
 
 					try:
-						for today_dump_file in disk.ls( path_webdav_today ):
-							if not today_dump_file.get('isDir') and today_dump_file.get('displayname') == db_file:
+						list_files = disk.ls( path_webdav_today )
+						for today_dump_file in list_files:
+							if today_dump_file.get('isDir') == False and today_dump_file.get('displayname') == db_file:
 								try_ = False
+								break
 					except YaDiskException as e:
 						if e.code == 404 or e.code == 500:
 							continue
@@ -147,11 +152,14 @@ if backup_sys:
 		try_i = 1
 
 		while try_ != False and try_i <= 5:
+			if not try_:
+				break
+
 			subprocess.Popen( "tar -cjf "+ sys_files[sys]['file'] +" "+ sys_files[sys]['dir'], stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()
 
 			time.sleep(sleep_time)
 
-			if try_i % 2 == 0:
+			if False and try_i % 2 == 0:
 				disk.upload( os.path.abspath( sys_files[sys]['file'] ), path_webdav_today + sys_files[sys]['file'] ) # заливаем на ЯДиск
 			else:
 				subprocess.Popen( "curl --user "+ yd_u +":"+ yd_p +" -T "+ os.path.abspath( sys_files[sys]['file'] ) +" https://webdav.yandex.ru"+ path_webdav_today, stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()
@@ -159,9 +167,11 @@ if backup_sys:
 			os.remove( os.path.abspath( sys_files[sys]['file'] ) ) # удаляем файл с сервера
 
 			try:
-				for today_dump_file in disk.ls( path_webdav_today ):
-					if not today_dump_file.get('isDir') and today_dump_file.get('displayname') == sys_files[sys]['file']:
+				list_files = disk.ls( path_webdav_today )
+				for today_dump_file in list_files:
+					if today_dump_file.get('isDir') == False and today_dump_file.get('displayname') == sys_files[sys]['file']:
 						try_ = False
+						break
 			except YaDiskException as e:
 				if e.code == 404 or e.code == 500:
 					continue
@@ -181,11 +191,14 @@ if backup_files:
 				try_i = 1
 
 				while try_ != False and try_i <= 5:
+					if not try_:
+						break
+
 					subprocess.Popen( "tar -cjf "+ site_file +" "+ joinpath( sites_dir, site ) +" --exclude=core/cache/*", stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()
 
 					time.sleep(sleep_time)
 
-					if try_i % 2 == 0:
+					if False and try_i % 2 == 0:
 						disk.upload( os.path.abspath( site_file ), path_webdav_today + site_file ) # заливаем на ЯДиск
 					else:
 						subprocess.Popen( "curl --user "+ yd_u +":"+ yd_p +" -T "+ os.path.abspath( site_file ) +" https://webdav.yandex.ru"+ path_webdav_today, stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True, universal_newlines=True ).communicate()
@@ -193,9 +206,11 @@ if backup_files:
 					os.remove( os.path.abspath( site_file ) ) # удаляем файл с сервера
 
 					try:
-						for today_dump_file in disk.ls( path_webdav_today ):
-							if not today_dump_file.get('isDir') and today_dump_file.get('displayname') == site_file:
+						list_files = disk.ls( path_webdav_today )
+						for today_dump_file in list_files:
+							if today_dump_file.get('isDir') == False and today_dump_file.get('displayname') == site_file:
 								try_ = False
+								break
 					except YaDiskException as e:
 						if e.code == 404 or e.code == 500:
 							continue

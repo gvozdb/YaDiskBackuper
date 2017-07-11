@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #coding: utf-8
-import requests
+from requests import request
 import xml.etree.ElementTree as ET
 
 
@@ -49,9 +49,7 @@ class YaDisk(object):
         headers = {"Accept": "*/*"}
         headers.update(addHeaders)
         url = self.url + addUrl
-        req = requests.Request(type, url, headers=headers, auth=(self.login, self.password), data=data)
-        with requests.Session() as s:
-            return s.send(req.prepare())
+        return request(type, url, headers=headers, auth=(self.login, self.password), data=data)
 
     def ls(self, path, offset=None, amount=None):
         """
@@ -80,7 +78,7 @@ class YaDisk(object):
         url = path
         if (offset != None) and (amount != None):
             url += "?offset=%d&amount=%d" % (offset, amount)
-        resp = self._sendRequest("PROPFIND", path, {'Depth': 1})
+        resp = self._sendRequest("PROPFIND", url, {'Depth': '1'})
         if resp.status_code == 207:
             return parseContent(resp.content)
         else:
@@ -104,7 +102,7 @@ class YaDisk(object):
   </D:prop>
 </D:propfind>
         """
-        resp = self._sendRequest("PROPFIND", "/", {'Depth': 0}, data)
+        resp = self._sendRequest("PROPFIND", "/", {'Depth': '0'}, data)
         if resp.status_code == 207:
             return parseContent(resp.content)
         else:
@@ -166,3 +164,53 @@ class YaDisk(object):
                 f.write(resp.content)
         else:
             raise YaDiskException(resp.status_code, resp.content)
+            
+    def publish_doc(self, path):
+        """Publish file or folder and return public url"""
+        
+        def parseContent(content):
+            root = ET.fromstring(content)
+            prop = root.find(".//d:prop", namespaces=self.namespaces)
+            return prop.find("{urn:yandex:disk:meta}public_url").text.strip()
+        
+        data = """
+<propertyupdate xmlns="DAV:">
+  <set>
+    <prop>
+      <public_url xmlns="urn:yandex:disk:meta">true</public_url>
+    </prop>
+  </set>
+</propertyupdate>
+        """
+        
+        if path[0] != '/':
+            raise YaDiskException("Destination path must be absolute")
+            
+        resp = self._sendRequest("PROPPATCH", addUrl=path, data=data)
+        if resp.status_code == 207:
+            return parseContent(resp.content)
+        else:
+            raise YaDiskException(resp.status_code, resp.content)
+    
+    def hide_doc(self, path):
+        """Make public file or folder private (delete public url)"""
+        
+        data = """
+<propertyupdate xmlns="DAV:">
+  <remove>
+    <prop>
+      <public_url xmlns="urn:yandex:disk:meta" />
+    </prop>
+  </remove>
+</propertyupdate>
+        """
+        
+        if path[0] != '/':
+            raise YaDiskException("Destination path must be absolute")
+            
+        resp = self._sendRequest("PROPPATCH", addUrl=path, data=data)
+        if resp.status_code == 207:
+            pass
+        else:
+            raise YaDiskException(resp.status_code, resp.content)
+        
